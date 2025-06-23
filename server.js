@@ -1,0 +1,74 @@
+import express from 'express';
+import cors from 'cors';
+import { v4 as uuid } from 'uuid';
+import todos from './todos.json' with {type: "json"};
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.get('/api/todo', (req, res) => {
+    return res.json({todos});
+});
+
+app.post('/api/todo', (req, res) => {
+    const todo = req.body;
+    todo.id = uuid();
+
+    todos.push(todo);
+    return res.json(todo);
+});
+
+app.put('/api/todo/:id', (req, res) => {
+    const { id } = req.params;
+    const data = req.body;
+
+    const todo = todos.find(todo => todo.id === id);
+    
+    todo.title = data.title;
+    
+    return res.json(todo);
+});
+
+app.delete('/api/todo/:id', (req, res) => {
+    const { id } = req.params;
+
+    const index = todos.findIndex(todo => todo.id === id);
+
+    if (index === -1) {
+        return res.status(404).json({ message: 'Todo not found' });
+    }
+
+    todos.splice(index, 1);
+
+    res.json({ todos });
+});
+
+app.post('/api/todo/:id/complete', (req, res) => {
+    const { id } = req.params;
+    const data = req.body;
+
+    const todo = todos.find(todo => todo.id === id);
+    
+    todo.completed ? todo.completed = false : todo.completed = true;
+    
+    return res.json(todo);
+});
+
+app.delete('/api/todo/clear-completed', (req, res) => {
+    const todosCompleted = req.body;
+
+    if (!Array.isArray(todosCompleted)) {
+        return res.status(400).json({ message: 'Expected an array of completed todos' });
+    }
+
+    const idsToRemove = todosCompleted.map(todo => todo.id);
+
+    const filtered = todos.filter(todo => !idsToRemove.includes(todo.id));
+
+    todos.splice(0, todos.length, ...filtered);
+
+    res.json({ todos });
+});
+
+app.listen(8000);

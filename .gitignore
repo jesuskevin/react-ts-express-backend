@@ -1,0 +1,44 @@
+# Node dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Log files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Process and runtime files
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage reports
+coverage/
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Build output (e.g., TypeScript or bundlers)
+dist/
+build/
+
+# Temporary or backup JSON files
+*.tmp.json
+*.bak.json
+
+# PM2 logs
+*.log
