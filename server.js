@@ -30,20 +30,6 @@ app.put('/api/todo/:id', (req, res) => {
     return res.json(todo);
 });
 
-app.delete('/api/todo/:id', (req, res) => {
-    const { id } = req.params;
-
-    const index = todos.findIndex(todo => todo.id === id);
-
-    if (index === -1) {
-        return res.status(404).json({ message: 'Todo not found' });
-    }
-
-    todos.splice(index, 1);
-
-    res.json({ todos });
-});
-
 app.post('/api/todo/:id/complete', (req, res) => {
     const { id } = req.params;
     const data = req.body;
@@ -67,6 +53,20 @@ app.delete('/api/todo/clear-completed', (req, res) => {
     const filtered = todos.filter(todo => !idsToRemove.includes(todo.id));
 
     todos.splice(0, todos.length, ...filtered);
+
+    res.json({ todos });
+});
+
+app.delete('/api/todo/:id', (req, res) => {
+    const { id } = req.params;
+
+    const index = todos.findIndex(todo => todo.id === id);
+
+    if (index === -1) {
+        return res.status(404).json({ message: 'Todo not found' });
+    }
+
+    todos.splice(index, 1);
 
     res.json({ todos });
 });
