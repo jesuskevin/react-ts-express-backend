@@ -1,7 +1,8 @@
 import express from 'express';
 import cors from 'cors';
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import todos from './todos.json' with {type: "json"};
+import { createTodo, updateTodo } from './validationSchemas/todos.js';
 const app = express();
 
 app.use(cors());
@@ -12,8 +13,16 @@ app.get('/api/todo', (req, res) => {
 });
 
 app.post('/api/todo', (req, res) => {
-    const todo = req.body;
-    todo.id = uuid();
+    const validation = createTodo(req.body);
+
+    if (validation.error) {
+        return res.status(422).json({ error: validation.error.message });
+    }
+
+    const todo = {
+        id: randomUUID(),
+        ...validation.data,
+    };
 
     todos.push(todo);
     return res.json(todo);
@@ -21,11 +30,15 @@ app.post('/api/todo', (req, res) => {
 
 app.put('/api/todo/:id', (req, res) => {
     const { id } = req.params;
-    const data = req.body;
+    const validation = updateTodo(req.body);
+
+    if (validation.error) {
+        return res.status(422).json({ error: validation.error.message });
+    }
 
     const todo = todos.find(todo => todo.id === id);
     
-    todo.title = data.title;
+    todo.title = validation.data.title;
     
     return res.json(todo);
 });
