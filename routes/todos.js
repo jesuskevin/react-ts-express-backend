@@ -1,31 +1,27 @@
 import { Router } from "express";
-import { randomUUID } from 'node:crypto';
-import todos from '../todos.json' with {type: "json"};
+import { TodoModel } from "../models/todo.js";
 import { createTodo, updateTodo } from '../validationSchemas/todos.js';
 
-export const moviesRouter = Router();
+export const todoRouter = Router();
 
-moviesRouter.get('/', (req, res) => {
+todoRouter.get('/', async (req, res) => {
+    const todos = await TodoModel.getAll();
     return res.json({todos});
 });
 
-moviesRouter.post('/', (req, res) => {
+todoRouter.post('/', async (req, res) => {
     const validation = createTodo(req.body);
 
     if (validation.error) {
         return res.status(422).json({ error: validation.error.message });
     }
 
-    const todo = {
-        id: randomUUID(),
-        ...validation.data,
-    };
+    const todo = await TodoModel.create({input: validation.data});
 
-    todos.push(todo);
     return res.json(todo);
 });
 
-moviesRouter.put('/:id', (req, res) => {
+todoRouter.put('/:id', (req, res) => {
     const { id } = req.params;
     const validation = updateTodo(req.body);
 
@@ -33,50 +29,40 @@ moviesRouter.put('/:id', (req, res) => {
         return res.status(422).json({ error: validation.error.message });
     }
 
-    const todo = todos.find(todo => todo.id === id);
-    
-    todo.title = validation.data.title;
+    const todo = TodoModel.update({id, input: validation.data});
+    if (!todo) return res.status(404).json({ message: 'Todo not found' });
     
     return res.json(todo);
 });
 
-moviesRouter.post('/:id/complete', (req, res) => {
+todoRouter.post('/:id/complete', (req, res) => {
     const { id } = req.params;
     const data = req.body;
 
-    const todo = todos.find(todo => todo.id === id);
-    
-    todo.completed ? todo.completed = false : todo.completed = true;
+    const todo = TodoModel.complete({id});
+    if (!todo) return res.status(404).json({ message: 'Todo not found' });
     
     return res.json(todo);
 });
 
-moviesRouter.delete('/clear-completed', (req, res) => {
+todoRouter.delete('/clear-completed', (req, res) => {
     const todosCompleted = req.body;
 
     if (!Array.isArray(todosCompleted)) {
         return res.status(400).json({ message: 'Expected an array of completed todos' });
     }
 
-    const idsToRemove = todosCompleted.map(todo => todo.id);
-
-    const filtered = todos.filter(todo => !idsToRemove.includes(todo.id));
-
-    todos.splice(0, todos.length, ...filtered);
+    const todos = TodoModel.clearCompleted({input: todosCompleted});
 
     res.json({ todos });
 });
 
-moviesRouter.delete('/:id', (req, res) => {
+todoRouter.delete('/:id', (req, res) => {
     const { id } = req.params;
 
-    const index = todos.findIndex(todo => todo.id === id);
+    const todos = TodoModel.delete({id});
 
-    if (index === -1) {
-        return res.status(404).json({ message: 'Todo not found' });
-    }
-
-    todos.splice(index, 1);
+    if (!todos) return res.status(404).json({ message: 'Todo not found' });
 
     res.json({ todos });
 });
