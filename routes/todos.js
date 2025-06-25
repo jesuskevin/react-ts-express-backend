@@ -1,18 +1,15 @@
-import express from 'express';
-import cors from 'cors';
+import { Router } from "express";
 import { randomUUID } from 'node:crypto';
-import todos from './todos.json' with {type: "json"};
-import { createTodo, updateTodo } from './validationSchemas/todos.js';
-const app = express();
+import todos from '../todos.json' with {type: "json"};
+import { createTodo, updateTodo } from '../validationSchemas/todos.js';
 
-app.use(cors());
-app.use(express.json());
+export const moviesRouter = Router();
 
-app.get('/api/todo', (req, res) => {
+moviesRouter.get('/', (req, res) => {
     return res.json({todos});
 });
 
-app.post('/api/todo', (req, res) => {
+moviesRouter.post('/', (req, res) => {
     const validation = createTodo(req.body);
 
     if (validation.error) {
@@ -28,7 +25,7 @@ app.post('/api/todo', (req, res) => {
     return res.json(todo);
 });
 
-app.put('/api/todo/:id', (req, res) => {
+moviesRouter.put('/:id', (req, res) => {
     const { id } = req.params;
     const validation = updateTodo(req.body);
 
@@ -43,7 +40,7 @@ app.put('/api/todo/:id', (req, res) => {
     return res.json(todo);
 });
 
-app.post('/api/todo/:id/complete', (req, res) => {
+moviesRouter.post('/:id/complete', (req, res) => {
     const { id } = req.params;
     const data = req.body;
 
@@ -54,7 +51,7 @@ app.post('/api/todo/:id/complete', (req, res) => {
     return res.json(todo);
 });
 
-app.delete('/api/todo/clear-completed', (req, res) => {
+moviesRouter.delete('/clear-completed', (req, res) => {
     const todosCompleted = req.body;
 
     if (!Array.isArray(todosCompleted)) {
@@ -70,7 +67,7 @@ app.delete('/api/todo/clear-completed', (req, res) => {
     res.json({ todos });
 });
 
-app.delete('/api/todo/:id', (req, res) => {
+moviesRouter.delete('/:id', (req, res) => {
     const { id } = req.params;
 
     const index = todos.findIndex(todo => todo.id === id);
@@ -83,5 +80,3 @@ app.delete('/api/todo/:id', (req, res) => {
 
     res.json({ todos });
 });
-
-app.listen(8000);
