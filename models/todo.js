@@ -1,60 +1,111 @@
-import { randomUUID } from 'node:crypto';
-import todos from '../todos.json' with {type: "json"};
+import mysql from 'mysql2/promise';
+
+const dbConnectionConfig = {
+    host: 'localhost',
+    port: 3306,
+    user: 'root',
+    password: 'password',
+    database: 'todosdb',
+};
+
+const connection = await mysql.createConnection(dbConnectionConfig);
 
 export class TodoModel {
     static getAll = async () => {
+        const [todos] = await connection.query('SELECT BIN_TO_UUID(id) id, title, completed FROM todos;');
         return todos;
     }
 
     static create = async ({ input }) => {
-        const todo = {
-            id: randomUUID(),
-            ...input,
-        };
+        const [newUuid] = await connection.query('SELECT UUID() uuid;');
+        const [{uuid}] = newUuid;
 
-        todos.push(todo);
+        const result = await connection.query(`
+            INSERT INTO todos (id, title, completed) VALUES
+            (UUID_TO_BIN(?), ?, ?);
+        `, [uuid, input.title, input.completed]);
 
-        return todo;
+        const [todos] = await connection.query('SELECT BIN_TO_UUID(id) id, title, completed FROM todos WHERE id = UUID_TO_BIN(?);',
+            [uuid]
+        )
+
+        return todos[0];
     }
 
     static update = async ({ id, input }) => {
-        const todoIndex = todos.findIndex(todo => todo.id === id);
-        if(todoIndex === -1) return false;
+        let [todos] = await connection.query('SELECT BIN_TO_UUID(id) id, title, completed FROM todos WHERE id = UUID_TO_BIN(?);',
+            [id]
+        )
 
-        todos[todoIndex] = {
-            ...todos[todoIndex],
-            ...input
-        }
+        if (!todos.length) return false;
 
-        return todos[todoIndex];
+        const todo = await connection.query(`
+            UPDATE todos SET
+            title = ?,
+            completed = ?
+            WHERE id = UUID_TO_BIN(?);
+        `, [input.title, input.completed ?? todos[0].completed, todos[0].id]);
+
+        [todos] = await connection.query('SELECT BIN_TO_UUID(id) id, title, completed FROM todos WHERE id = UUID_TO_BIN(?);',
+            [id]
+        )
+
+        return todos[0];
     }
 
     static delete = async ({ id }) => {
-        const index = todos.findIndex(todo => todo.id === id);
-        if (index === -1) return false;
+        let [todos] = await connection.query('SELECT BIN_TO_UUID(id) id, title, completed FROM todos WHERE id = UUID_TO_BIN(?);',
+            [id]
+        )
 
-        todos.splice(index, 1);
+        if (!todos.length) return false;
 
-        return todos;
+        const todo = await connection.query(`
+            DELETE FROM todos
+            WHERE id = UUID_TO_BIN(?);
+        `, [todos[0].id]);
+
+        [todos] = await connection.query('SELECT BIN_TO_UUID(id) id, title, completed FROM todos;',
+            [id]
+        )
+
+        return todos[0];
     }
 
     static complete = async ({ id }) => {
-        const todoIndex = todos.findIndex(todo => todo.id === id);
-        if(todoIndex === -1) return false;
+        let [todos] = await connection.query('SELECT BIN_TO_UUID(id) id, title, completed FROM todos WHERE id = UUID_TO_BIN(?);',
+            [id]
+        )
 
-        todos[todoIndex] = {
-            ...todos[todoIndex],
-            completed: todos[todoIndex].completed ? false : true
-        }
+        if (!todos.length) return false;
 
-        return todos[todoIndex];
+        const todo = await connection.query(`
+            UPDATE todos SET
+            completed = ?
+            WHERE id = UUID_TO_BIN(?);
+        `, [todos[0].completed ? false : true, todos[0].id]);
+
+        [todos] = await connection.query('SELECT BIN_TO_UUID(id) id, title, completed FROM todos WHERE id = UUID_TO_BIN(?);',
+            [id]
+        )
+
+        return todos[0];
     }
 
     static clearCompleted = async ({ input }) => {
         const idsToRemove = input.map(todo => todo.id);
-        const filtered = todos.filter(todo => !idsToRemove.includes(todo.id));
-        todos.splice(0, todos.length, ...filtered);
 
-        return todos;
+        if (!idsToRemove.length) return [];
+
+        const placeholders = idsToRemove.map(() => 'UUID_TO_BIN(?)').join(', ');
+        
+        const result = await connection.query(`
+            DELETE FROM todos
+            WHERE id IN (${placeholders});
+        `, idsToRemove);
+
+        const [todos] = await connection.query('SELECT BIN_TO_UUID(id) id, title, completed FROM todos;');
+
+        return todos[0];
     }
 }
