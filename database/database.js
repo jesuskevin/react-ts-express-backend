@@ -1,7 +1,16 @@
 import { Sequelize } from "sequelize";
+import 'dotenv/config.js';
 
-export const database = new Sequelize('todosdb', 'root', 'password', {
-    host: 'localhost',
-    port: 3306,
-    dialect: 'mysql'
+const dbDatabase = process.env.DB_DATABASE;
+const dbUser = process.env.DB_USER;
+const dbPassword = process.env.DB_PASSWORD;
+const dbHost = process.env.DB_HOST;
+const dbPort = process.env.DB_PORT;
+const dbDialect = process.env.SEQUELIZE_DIALECT;
+
+
+export const database = new Sequelize(dbDatabase, dbUser, dbPassword, {
+    host: dbHost,
+    port: dbPort,
+    dialect: dbDialect
 });

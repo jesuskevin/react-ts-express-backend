@@ -1,8 +1,9 @@
 import app from "./app.js";
 import { database } from "./database/database.js";
+import 'dotenv/config.js';
 
 const start = async () => {
-    const PORT = process.env.PORT ?? 8000;
+    const PORT = process.env.APP_PORT ?? 8000;
     try {
         await database.sync();
         app.listen(PORT);
