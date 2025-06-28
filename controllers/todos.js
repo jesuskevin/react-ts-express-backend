@@ -1,9 +1,10 @@
+import { Op } from "sequelize";
 import { TodoModel } from "../models/todo.js";
 import { createTodo, updateTodo } from '../validationSchemas/todos.js';
 
 export class TodoController {
     static getAll = async (req, res) => {
-        const todos = await TodoModel.getAll();
+        const todos = await TodoModel.findAll();
         return res.json({ todos });
     }
 
@@ -14,7 +15,7 @@ export class TodoController {
             return res.status(422).json({ error: validation.error.message });
         }
 
-        const todo = await TodoModel.create({ input: validation.data });
+        const todo = await TodoModel.create({ ...validation.data });
 
         return res.json(todo);
     }
@@ -27,7 +28,12 @@ export class TodoController {
             return res.status(422).json({ error: validation.error.message });
         }
 
-        const todo = await TodoModel.update({ id, input: validation.data });
+        const todo = await TodoModel.update(
+            { ...validation.data },
+            {
+                where: { id },
+            }
+        );
         if (!todo) return res.status(404).json({ message: 'Todo not found' });
 
         return res.json(todo);
@@ -36,7 +42,7 @@ export class TodoController {
     static delete = async (req, res) => {
         const { id } = req.params;
 
-        const todos = await TodoModel.delete({ id });
+        const todos = await TodoModel.destroy({ where: { id } });
 
         if (!todos) return res.status(404).json({ message: 'Todo not found' });
 
@@ -47,20 +53,28 @@ export class TodoController {
         const { id } = req.params;
         const data = req.body;
 
-        const todo = await TodoModel.complete({ id });
+        const todo = await TodoModel.findByPk(id);
+
         if (!todo) return res.status(404).json({ message: 'Todo not found' });
+
+        todo.completed = todo.completed ? false : true;
+        todo.save();
 
         return res.json(todo);
     }
 
     static clearCompleted = async (req, res) => {
-        const todosCompleted = req.body;
+        const todosCompleted = req.body.map((todo) => todo.id);
 
         if (!Array.isArray(todosCompleted)) {
             return res.status(400).json({ message: 'Expected an array of completed todos' });
         }
 
-        const todos = await TodoModel.clearCompleted({ input: todosCompleted });
+        await TodoModel.destroy({
+            where: { id: { [Op.in]: todosCompleted } }
+        });
+
+        const todos = TodoModel.findAll();
 
         res.json({ todos });
     }
