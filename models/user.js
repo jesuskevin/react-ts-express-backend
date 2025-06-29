@@ -17,7 +17,6 @@ UserModel.init({
     email: {
         type: DataTypes.STRING,
         allowNull: false,
-        defaultValue: false,
         unique: true,
         validate: {
             isEmail: true,

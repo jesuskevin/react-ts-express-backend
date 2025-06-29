@@ -1,10 +1,11 @@
 import { Op } from "sequelize";
 import { TodoModel } from "../models/todo.js";
+import { UserModel } from "../models/user.js";
 import { createTodo, updateTodo } from '../validationSchemas/todos.js';
 
 export class TodoController {
     static getAll = async (req, res) => {
-        const todos = await TodoModel.findAll();
+        const todos = await (await this.getAuthUser(req)).getTodos();
         return res.json({ todos });
     }
 
@@ -15,7 +16,7 @@ export class TodoController {
             return res.status(422).json({ error: validation.error.message });
         }
 
-        const todo = await TodoModel.create({ ...validation.data });
+        const todo = await (await this.getAuthUser(req)).createTodo({ ...validation.data });
 
         return res.json(todo);
     }
@@ -74,8 +75,12 @@ export class TodoController {
             where: { id: { [Op.in]: todosCompleted } }
         });
 
-        const todos = TodoModel.findAll();
+        const todos = await (await this.getAuthUser(req)).getTodos();
 
         res.json({ todos });
+    }
+
+    static getAuthUser = async (req) => {
+        return await UserModel.findByPk(req.user.id);
     }
 }
