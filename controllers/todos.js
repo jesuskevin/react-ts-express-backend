@@ -64,11 +64,11 @@ export class TodoController {
     }
 
     static clearCompleted = async (req, res) => {
-        const todosCompleted = req.body.map((todo) => todo.id);
-
-        if (!Array.isArray(todosCompleted)) {
+        if (!Array.isArray(req.body)) {
             return res.status(400).json({ message: 'Expected an array of completed todos' });
         }
+
+        const todosCompleted = req.body.map((todo) => todo.id);
 
         await TodoModel.destroy({
             where: { id: { [Op.in]: todosCompleted } }

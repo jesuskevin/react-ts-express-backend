@@ -1,22 +1,30 @@
 import { DataTypes, Model } from "sequelize";
 import { database } from "../database/database.js";
 
-export class TodoModel extends Model {}
+export class UserModel extends Model {}
 
-TodoModel.init({
+UserModel.init({
     id: {
         type: DataTypes.UUID,
         primaryKey: true,
         allowNull: false,
         defaultValue: DataTypes.UUIDV4
     },
-    title: {
+    name: {
         type: DataTypes.STRING,
         allowNull: false,
     },
-    completed: {
-        type: DataTypes.BOOLEAN,
+    email: {
+        type: DataTypes.STRING,
         allowNull: false,
         defaultValue: false,
-    }   
-}, { sequelize: database, modelName: 'Todo' });
+        unique: true,
+        validate: {
+            isEmail: true,
+        }
+    },
+    password: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    }
+}, { sequelize: database, modelName: 'User' });
