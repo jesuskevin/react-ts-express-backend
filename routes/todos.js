@@ -4,7 +4,6 @@ import { TodoController } from "../controllers/todos.js";
 export const todoRouter = Router();
 
 todoRouter.use((req, res, next) => {
-    console.log(req.isAuthenticated());
     if (!req.user) return res.status(401).json({message: "Unauthorized"});
 
     return next();

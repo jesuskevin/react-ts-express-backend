@@ -39,6 +39,5 @@ authRouter.post('/login', AuthController.login);
 authRouter.post('/logout', passport.authenticate('session'), AuthController.logout);
 
 authRouter.post('/user', passport.authenticate('session'), (req, res) => {
-    console.log(req.user);
     return res.json(req.user);
 });
