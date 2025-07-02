@@ -2,6 +2,11 @@ import { Op } from "sequelize";
 import { TodoModel } from "../models/todo.js";
 import { UserModel } from "../models/user.js";
 import { createTodo, updateTodo } from '../validationSchemas/todos.js';
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
 
 export class TodoController {
     static getAll = async (req, res) => {
@@ -78,6 +83,29 @@ export class TodoController {
         const todos = await (await this.getAuthUser(req)).getTodos();
 
         res.json({ todos });
+    }
+
+    static summarize = async (req, res) => {
+        try {
+            const rows = await (await this.getAuthUser(req)).getTodos({raw: true});
+            const groupedTodos = rows.reduce((filteredTodos, todo) => {
+                const key = todo.completed ? 'completed' : 'active' ?? 'unknown';
+                (filteredTodos[key] ||= []).push(todo);
+                return filteredTodos;
+            }, {});
+
+            const userInput = JSON.stringify(groupedTodos, null, 2);
+            const response = await openai.responses.create({
+                model: 'gpt-4o-mini',
+                instructions: `You are an upbeat assistant that summarises a user's todos.`,
+                input: `Here is the user's todo list grouped by active or completed status:\n\n${userInput}\n\nWrite a friendly summary for him.`,
+            });
+
+            res.json({ summary: response.output_text });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Failed to generate summary' });
+        }
     }
 
     static getAuthUser = async (req) => {

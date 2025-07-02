@@ -20,3 +20,5 @@ todoRouter.post('/:id/complete', TodoController.complete);
 todoRouter.delete('/clear-completed', TodoController.clearCompleted);
 
 todoRouter.delete('/:id', TodoController.delete);
+
+todoRouter.get('/summarize', TodoController.summarize);
